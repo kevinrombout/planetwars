@@ -31,11 +31,19 @@ def do_turn(pw):
 
     # (1) Implement an algorithm to determine the source planet to send your ships from
     # ... actual code here
-    source = pw.my_planets()[0]
+    for my_planet in pw.my_planets():
 
-    # (2) Implement an algorithm to determine the destination planet to send your ships to
-    # ... actual code here
-    destination = pw.not_my_planets()[0]
+        if planet.number_ships() <= 1:
+            continue;
+
+        # (2) Implement an algorithm to determine the destination planet to send your ships to
+        # ... actual code here
+        destination = [0]
+
+        for not_my_planet in pw.not_my_planets():
+
+
+
 
     # (3) Attack/Defend
     # If the source and destination variables contain actual planets, then
