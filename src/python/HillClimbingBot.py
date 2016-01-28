@@ -44,19 +44,14 @@ def do_turn(pw):
         conquerableNeutrals = pw.enemy_planets()
         conquerableOpponets = pw.neutral_planets()
 
-    #find the planet with the biggest growthrate
-    biggestNeutral      = biggestGrowthRate(conquerableNeutrals)
-    biggestOpponent     = biggestGrowthRate(conquerableOpponets)
-
-    #select the best candidate based on highest growthrate
-    if biggestNeutral == 0:
-        dest = biggestOpponent
-    elif biggestOpponent == 0:
-        dest = biggestNeutral
-    elif biggestNeutral.growth_rate() > biggestOpponent.growth_rate():
-        dest = biggestNeutral
+    if conquerableNeutrals > 0:
+        biggestNeutral = biggestGrowthRate(conquerableNeutrals)
+        if biggestNeutral == 0:
+            dest = biggestGrowthRate(conquerableOpponets)     
+        else:
+            dest = biggestNeutral
     else:
-        dest = biggestOpponent
+        dest = biggestGrowthRate(conquerableOpponets)
 
     # Attack.
     # If the source and dest variables contain actual planets, then send half of the ships from source to dest.
