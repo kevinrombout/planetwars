@@ -16,14 +16,17 @@ Try to improve this bot. For example, you can try to answer some of this questio
 # Import the PlanetWars class from the PlanetWars module.
 from PlanetWarsAPI import PlanetWars, Planet
 
+global_depth = 2
 
 def do_turn(pw):
+
+    global global_depth
+
     """
     This is the main function, here we make the decision what to do.
 
     @type pw: PlanetWars
     """
-
     try:
         # The source variable will contain the planet from which we send the ships.
         source = None
@@ -44,7 +47,7 @@ def do_turn(pw):
             for not_my_planet in pw.not_my_planets():
                 # (5) evaluate how the current simulated state is
                 # here you can change how a state is evaluated as good
-                score_max = simulate_move(pw, my_planet, not_my_planet)
+                score_max = simulate_move(pw, my_planet, not_my_planet, global_depth) + simulate_move(pw, my_planet, not_my_planet, global_depth, True)
 
                 # (6) find the planet with the maximum evaluated score
                 # this is the most promising future state
@@ -53,6 +56,7 @@ def do_turn(pw):
                     source = my_planet
                     dest = not_my_planet
 
+        pw.log("hoogste score: %f" % (score))
         # (3) Attack.
         # If the source and dest variables contain actual planets, then
         # send half of the ships from source to dest.
@@ -62,7 +66,17 @@ def do_turn(pw):
         pw.log(e.message, e.__doc__)
 
 
-def simulate_move(pw, source, destination):
+def simulate_move(pw, source_planet, destination_planet, depth, skip_depth = False):
+
+    depth = depth - 1
+
+    # The source variable will contain the planet from which we send the ships.
+    source = source_planet
+
+    # The dest variable will contain the destination, the planet to which we send the ships.
+    dest = destination_planet
+
+
     """
     Simulate move, with original PlanetWars object
     :type pw : PlanetWars
@@ -75,13 +89,13 @@ def simulate_move(pw, source, destination):
     simulated_pw = SimulatedPlanetWars(pw)
 
     # (1) simulate my turn with the current couple of source and destination
-    simulated_pw.simulate_attack(source, destination)
+    simulated_pw.simulate_attack(source, dest)
 
     # (2) simulate the growth of ships that happens in each turn
     # NOTE this is commented out because in SERIAL it grows between turns
     # this is adapted for PARALLEL MODE. To get it to work in serial again, just
     # uncomment the next line. Ty.
-    #simulated_pw.simulate_growth()
+    simulated_pw.simulate_growth()
 
     # (3) simulate the opponent's turn, assuming that the opponent is the BullyBot
     # here you can add other opponents.
@@ -92,10 +106,35 @@ def simulate_move(pw, source, destination):
     # pw.log("After 2nd growth")
     # pw.log(simulated_pw.__repr__())
 
+    if depth > 1 and skip_depth == false:
+        
+        for my_planet in simulated_pw.my_planets():
+            # Skip planets with only one ship
+            if my_planet.number_ships() <= 1:
+                continue
+
+            score = -1
+            for not_my_planet in simulated_pw.not_my_planets():
+                # (5) evaluate how the current simulated state is
+                # here you can change how a state is evaluated as good
+
+                score_max = simulate_move(simulated_pw, my_planet, not_my_planet, depth)
+
+                # (6) find the planet with the maximum evaluated score
+                # this is the most promising future state
+                if score_max > score:
+                    score = score_max
+                    source = my_planet
+                    dest = not_my_planet
+
+        return  score + simulated_pw.evaluate_state()
     # (5) evaluate how the current simulated state is
     # here you can change how a state is evaluated as good
-    return simulated_pw.evaluate_state()
 
+    if skip_depth == True:
+        return simulated_pw.evaluate_state()
+    else:
+        return 0
 
 class SimulatedPlanetWars(PlanetWars):
     """
@@ -195,6 +234,7 @@ class SimulatedPlanetWars(PlanetWars):
         if source is not None and dest is not None:
             self.simulate_attack(source, dest)
 
+
     def evaluate_state(self):
         """
         Evaluates how promising a simulated state is.
@@ -208,12 +248,31 @@ class SimulatedPlanetWars(PlanetWars):
         Returns score of the final state of the simulation
         """
 
+        my_planets = len(self.my_planets())
+        enemy_planets = len(self.enemy_planets())
+
+        if my_planets == 0:
+            my_planets = 0.1
+
+        if enemy_planets == 0:
+            enemy_planets = 2000
+
         my_ships = (1 + sum(p.number_ships() for p in self.my_planets()))
         enemy_ships = (1 + sum(p.number_ships() for p in self.enemy_planets()))
 
-        self.log("enemy ships: %f, my ships: %f" % (enemy_ships, my_ships))
+        score = my_ships / float(enemy_ships)
+        
+        self.log("score for this move: %f" % (score))
 
-        return my_ships / float(enemy_ships)
+        return score
+
+        # my_ships = (1 + sum(p.number_ships() for p in self.my_planets()))
+        # enemy_ships = (1 + sum(p.number_ships() for p in self.enemy_planets()))
+
+        # self.log("enemy ships: %f, my ships: %f" % (enemy_ships, my_ships))
+
+        # return my_ships / float(enemy_ships)
+
 
     def __repr__(self):
         return "\n".join(p.__repr__() for p in self._planets)

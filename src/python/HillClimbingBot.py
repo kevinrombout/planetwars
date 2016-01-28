@@ -2,7 +2,7 @@
 
 """
 HillClimbingBot - A bit smarter kind of bot, who searches for its strongest planet and then attacks the weakest planet.
-The score is computed based on the number of ships.
+The score is computed based on the number of ships and growthrate.
 """
 # Import the PlanetWars class from the PlanetWars module.
 from PlanetWarsAPI import PlanetWars
@@ -21,15 +21,16 @@ def do_turn(pw):
     # Find my strongest planet (highest amount of ships)
     for my_planet in pw.my_planets():
 
-        #we do not want to look at ships which only have 1 or less ships cause we can not qonquer any planet with it
         score_max_my_planet = my_planet.number_ships()
 
+        #we do not want to look at ships which only have 1 or less ships cause we can not qonquer any planet with it
         if score_max_my_planet <= 1 :
             continue;
 
         if  source == 0:
             source_score    = score_max_my_planet
             source          = my_planet            
+        #we do not want to lose a planet with a relatively high growth rate, in case we lose we lose one with low growth rate
         elif score_max_my_planet > source_score and my_planet.growth_rate() < source.growth_rate:
             source_score    = score_max_my_planet
             source          = my_planet
@@ -38,6 +39,10 @@ def do_turn(pw):
     #find planets which we can conquer with our source planet
     conquerableNeutrals = conquerablePlanets(pw.neutral_planets(), source)
     conquerableOpponets = conquerablePlanets(pw.enemy_planets(), source)
+
+    if (conquerableNeutrals == 0 and conquerableOpponets == 0) :
+        conquerableNeutrals = pw.enemy_planets()
+        conquerableOpponets = pw.neutral_planets()
 
     #find the planet with the biggest growthrate
     biggestNeutral      = biggestGrowthRate(conquerableNeutrals)
