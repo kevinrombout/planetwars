@@ -55,6 +55,8 @@ def do_turn(pw):
         dest = biggestNeutral
     elif biggestNeutral.growth_rate() > biggestOpponent.growth_rate():
         dest = biggestNeutral
+    else:
+        dest = biggestOpponent
 
     # Attack.
     # If the source and dest variables contain actual planets, then send half of the ships from source to dest.
